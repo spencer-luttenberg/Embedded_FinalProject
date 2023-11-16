@@ -75,8 +75,8 @@ all: main-build
 main-build: Embedded_Final_Project.elf secondary-outputs
 
 # Tool invocations
-Embedded_Final_Project.elf Embedded_Final_Project.map: $(OBJS) $(USER_OBJS) C:\Users\kelly\STM32CubeIDE\workspace_1.13.1\Embedded_Final_Project\STM32F746ZGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-g++ -o "Embedded_Final_Project.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\kelly\STM32CubeIDE\workspace_1.13.1\Embedded_Final_Project\STM32F746ZGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Embedded_Final_Project.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+Embedded_Final_Project.elf Embedded_Final_Project.map: $(OBJS) $(USER_OBJS) C:\Users\lazyq\STM32CubeIDE\workspace_1.7.0\ECE_4263_Project5_RepoBMBB\Embedded_FinalProject\STM32F746ZGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-g++ -o "Embedded_Final_Project.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\lazyq\STM32CubeIDE\workspace_1.7.0\ECE_4263_Project5_RepoBMBB\Embedded_FinalProject\STM32F746ZGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Embedded_Final_Project.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

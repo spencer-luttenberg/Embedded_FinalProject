@@ -21,6 +21,19 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "string.h"
+#include "stdlib.h"
+#include "stdbool.h"
+#include "stdio.h"
+#include "memory.h"
+#include "stdint.h"
+
+#include "stm32f7xx_hal_rcc.h"
+#include "stm32f7xx_hal.h"
+#include "stm32f7xx_hal_exti.h"
+#include "stm32f7xx_hal_flash_ex.h"
+#include "stm32f7xx_hal_flash.h"
+#include "stm32f7xx_hal_gpio.h"
 
 /* USER CODE END Includes */
 
@@ -31,6 +44,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define FLASH_PROGRAM_BYTE	((uint32_t)0x00)
+#define FLASH_PROGRAM_HWORD	((uint32_t)0x01)
+#define FLASH_PROGRAM_WORD	((uint32_t)0x02)
 
 /* USER CODE END PD */
 
@@ -52,6 +68,11 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
 
+uint8_t singlePacket;
+uint32_t EEPROM_Sector_5 = ((uint32_t)0x08040000);
+uint64_t testDump;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,12 +85,13 @@ static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
-
+int writeEEPROM(int, uint8_t[]);
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
 #define MOTORA 0
 
 void set_motor_pwm(uint8_t motor_ID, float duty_cycle){
@@ -125,6 +147,17 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+
+
+	// 12 fps * 60 seconds * 5 min = 3600 samples
+//	uint8_t pack[3600];
+//	for(int i = 0; i <= 3600 - 1; i++){
+//		memcpy(&singlePacket, (void *) (EEPROM_Location_Read), sizeof(singlePacket));
+//		pack[i] = singlePacket;
+//		EEPROM_Location_Read = EEPROM_Location_Read + 0x1;
+//	}
+
+
   float current_duty_cycle = 0.0;
 
 
@@ -138,6 +171,17 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+
+	uint8_t Input_Byte_Array[4];
+	Input_Byte_Array[0] = (uint8_t)0b00000001;
+	Input_Byte_Array[1] = (uint8_t)0b00000010;
+	Input_Byte_Array[2] = (uint8_t)0b00000011;
+	Input_Byte_Array[3] = (uint8_t)0b11111110;
+
+
+	writeEEPROM(0, Input_Byte_Array);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -506,11 +550,34 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+int writeEEPROM(int songID, uint8_t *array){
 
+	uint32_t MEM_Location = EEPROM_Sector_5 + songID * 0xE10; // 0xE10 = 3600 Bytes offset
+//
+//	if(sizeof(array) >= 3600){
+//		return 1; // input array too big
+//	}
 
+	HAL_FLASH_Unlock();
+	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_ERSERR | FLASH_FLAG_PGPERR);
 
+	// voltage range 1 = byte erase
+	FLASH_Erase_Sector(FLASH_SECTOR_5, FLASH_VOLTAGE_RANGE_3);
+	HAL_FLASH_Program(FLASH_PROGRAM_BYTE, (MEM_Location), 0x00000001);
 
+//
+//	for(int i = 0; i + 1 <= sizeof(array); i++){
+//	  HAL_FLASH_Program(FLASH_PROGRAM_BYTE, (MEM_Location), array[i]);
+//	  MEM_Location = MEM_Location + 0x1;
+//	  HAL_Delay(1000);
+//	}
 
+	HAL_FLASH_Lock();
+	HAL_Delay(1000);
+
+	return 0;
+
+}
 
 
 

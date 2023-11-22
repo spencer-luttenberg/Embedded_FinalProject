@@ -86,6 +86,7 @@ static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
 int writeEEPROM(int, uint8_t[]);
+int readEEPROM(int, uint8_t[]);
 
 /* USER CODE END PFP */
 
@@ -149,13 +150,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
 
-	// 12 fps * 60 seconds * 5 min = 3600 samples
-//	uint8_t pack[3600];
-//	for(int i = 0; i <= 3600 - 1; i++){
-//		memcpy(&singlePacket, (void *) (EEPROM_Location_Read), sizeof(singlePacket));
-//		pack[i] = singlePacket;
-//		EEPROM_Location_Read = EEPROM_Location_Read + 0x1;
-//	}
+
 
 
   float current_duty_cycle = 0.0;
@@ -173,14 +168,19 @@ int main(void)
   {
 
 
-	uint8_t Input_Byte_Array[4];
-	Input_Byte_Array[0] = (uint8_t)0b00000001;
-	Input_Byte_Array[1] = (uint8_t)0b00000010;
-	Input_Byte_Array[2] = (uint8_t)0b00000011;
-	Input_Byte_Array[3] = (uint8_t)0b11111110;
 
-
+	// example write
+	uint8_t Input_Byte_Array[3600];
+	for (int i = 0; i <= 3599; i++) {
+		Input_Byte_Array[i] = (uint8_t)0b00001011;
+	}
 	writeEEPROM(0, Input_Byte_Array);
+
+
+	// example read
+	uint8_t Output_Byte_Array[3600];
+	readEEPROM(0, Output_Byte_Array);
+
 
     /* USER CODE END WHILE */
 
@@ -550,35 +550,64 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+
+/*
+songID index begins at 0. Array expected to be
+full, and padded with zeros.
+Bit format = 0b00000MBT
+*/
 int writeEEPROM(int songID, uint8_t *array){
 
 	uint32_t MEM_Location = EEPROM_Sector_5 + songID * 0xE10; // 0xE10 = 3600 Bytes offset
-//
-//	if(sizeof(array) >= 3600){
-//		return 1; // input array too big
-//	}
+
+	if((sizeof(array) > 3600) || songID > 71){
+		return 1; // Input array too big or songID too big
+	}
+
+	// overwrite first index for checking in read memory
+	array[0] = (uint8_t)0b01011000;
 
 	HAL_FLASH_Unlock();
 	__HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_ERSERR | FLASH_FLAG_PGPERR);
 
-	// voltage range 1 = byte erase
-	FLASH_Erase_Sector(FLASH_SECTOR_5, FLASH_VOLTAGE_RANGE_3);
-	HAL_FLASH_Program(FLASH_PROGRAM_BYTE, (MEM_Location), 0x00000001);
+	for(int i = 0; i + 1 <= 3600; i++){
+	  HAL_FLASH_Program(FLASH_PROGRAM_BYTE, (MEM_Location), array[i]);
+	  MEM_Location = MEM_Location + 0x1;
+	}
 
-//
-//	for(int i = 0; i + 1 <= sizeof(array); i++){
-//	  HAL_FLASH_Program(FLASH_PROGRAM_BYTE, (MEM_Location), array[i]);
-//	  MEM_Location = MEM_Location + 0x1;
-//	  HAL_Delay(1000);
-//	}
-
-	HAL_FLASH_Lock();
 	HAL_Delay(1000);
+	HAL_FLASH_Lock();
 
 	return 0;
-
 }
 
+
+/*
+Input argument arr will be filled with data
+songID index begins at 0
+Bit format = 0b00000MBT
+*/
+int readEEPROM(int songID, uint8_t arr[]) {
+	// 12 fps * 60 seconds * 5 min = 3600 samples
+
+	if(songID > 71){
+		return 1; // songID too big
+	}
+
+	uint32_t MEM_Location = EEPROM_Sector_5 + songID * 0xE10; // 0xE10 = 3600 Bytes offset
+
+	for(int i = 0; i <= 3599; i++){
+		memcpy(&singlePacket, (void *) (MEM_Location), sizeof(singlePacket));
+		arr[i] = singlePacket;
+		MEM_Location = MEM_Location + 0x1;
+	}
+
+	if((uint8_t)arr[0] != (uint8_t)0b01011000){
+		return 1; // checksum failed, song not located in this memory location
+	}
+
+    return 0;
+}
 
 
 

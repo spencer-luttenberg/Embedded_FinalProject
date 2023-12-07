@@ -48,6 +48,8 @@
 #define FLASH_PROGRAM_HWORD	((uint32_t)0x01)
 #define FLASH_PROGRAM_WORD	((uint32_t)0x02)
 
+uint16_t timer4Value;
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -61,6 +63,7 @@ I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim10;
 
 UART_HandleTypeDef huart3;
 
@@ -83,6 +86,7 @@ static void MX_TIM2_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM10_Init(void);
 /* USER CODE BEGIN PFP */
 
 int writeEEPROM(int, uint8_t[]);
@@ -147,25 +151,21 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   MX_TIM3_Init();
+  MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_TIM_Base_Start(&htim10);
 
 
 
 
-  float current_duty_cycle = 0.0;
+
+	float current_duty_cycle = 0.0;
 
 
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-  HAL_UART_Receive_DMA (&huart3, Rx_data, 4);  // Receive 4 Bytes of data
-  HAL_UART_Receive_IT (&huart3, Rx_data, 4);
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+	HAL_UART_Receive_DMA (&huart3, Rx_data, 4);  // Receive 4 Bytes of data
+	HAL_UART_Receive_IT (&huart3, Rx_data, 4);
 
 
 
@@ -180,6 +180,22 @@ int main(void)
 	// example read
 	uint8_t Output_Byte_Array[3600];
 	readEEPROM(0, Output_Byte_Array);
+
+
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
+  {
+
+	// create new thread
+	timer4Value = __HAL_TIM_GET_COUNTER(&htim10);
+
+	if(timer4Value % 1200 == 0){
+	  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+	}
+
 
 
     /* USER CODE END WHILE */
@@ -388,6 +404,37 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
+  * @brief TIM10 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM10_Init(void)
+{
+
+  /* USER CODE BEGIN TIM10_Init 0 */
+
+  /* USER CODE END TIM10_Init 0 */
+
+  /* USER CODE BEGIN TIM10_Init 1 */
+
+  /* USER CODE END TIM10_Init 1 */
+  htim10.Instance = TIM10;
+  htim10.Init.Prescaler = 60000;
+  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim10.Init.Period = 13200;
+  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM10_Init 2 */
+
+  /* USER CODE END TIM10_Init 2 */
 
 }
 

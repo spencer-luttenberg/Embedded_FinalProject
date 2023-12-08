@@ -48,7 +48,7 @@
 #define FLASH_PROGRAM_HWORD	((uint32_t)0x01)
 #define FLASH_PROGRAM_WORD	((uint32_t)0x02)
 
-uint16_t timer4Value;
+uint16_t timer10Value;
 
 /* USER CODE END PD */
 
@@ -154,7 +154,8 @@ int main(void)
   MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_TIM_Base_Start(&htim10);
+//  HAL_TIM_Base_Start(&htim10);
+  HAL_TIM_Base_Start_IT(&htim10);
 
 
 
@@ -189,12 +190,13 @@ int main(void)
   while (1)
   {
 
-	// create new thread
-	timer4Value = __HAL_TIM_GET_COUNTER(&htim10);
-
-	if(timer4Value % 1200 == 0){
-	  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
-	}
+//	// create new thread
+	timer10Value = __HAL_TIM_GET_COUNTER(&htim10);
+//
+//	// 1200 = 1Hz,
+//	if(timer10Value % 100 == 0){
+//	  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+//	}
 
 
 
@@ -425,7 +427,7 @@ static void MX_TIM10_Init(void)
   htim10.Instance = TIM10;
   htim10.Init.Prescaler = 60000;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 13200;
+  htim10.Init.Period = 100-1;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
@@ -596,6 +598,17 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+// Playback Function 12Hz
+// Callback: timer has rolled over
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  // Check which version of the timer triggered this callback and toggle LED
+  if (htim == &htim10 )
+  {
+	  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+  }
+}
 
 
 /*

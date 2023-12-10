@@ -66,15 +66,25 @@ TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim10;
 
 UART_HandleTypeDef huart3;
+UART_HandleTypeDef huart6;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
 
+// Memory read write
 uint8_t singlePacket;
 uint32_t EEPROM_Sector_5 = ((uint32_t)0x08040000);
 uint64_t testDump;
 
+// Play Song
+uint8_t current_song = 0;
+uint8_t current_song_data[3599];
+uint8_t initial_start_playing = 0;
+uint8_t play_flag = 0;
+uint16_t i_play = 0;
+uint8_t max_songs = 2; // zero index counts as song
+uint8_t current_state = 0; // 0 = pause, 1 = play
 
 /* USER CODE END PV */
 
@@ -87,10 +97,14 @@ static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM10_Init(void);
+static void MX_USART6_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 int writeEEPROM(int, uint8_t[]);
 int readEEPROM(int, uint8_t[]);
+int playSong();
+int stopSong();
+
 
 /* USER CODE END PFP */
 
@@ -152,12 +166,15 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_TIM3_Init();
   MX_TIM10_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
 
 //  HAL_TIM_Base_Start(&htim10);
   HAL_TIM_Base_Start_IT(&htim10);
 
 
+//  	uint8_t dataTemp[] = "#0\n";
+//	HAL_UART_Transmit (&huart6, dataTemp, sizeof (dataTemp), 10);
 
 
 
@@ -173,7 +190,7 @@ int main(void)
 	// example write
 	uint8_t Input_Byte_Array[3600];
 	for (int i = 0; i <= 3599; i++) {
-		Input_Byte_Array[i] = (uint8_t)0b00001011;
+		Input_Byte_Array[i] = (uint8_t)0b00000010;
 	}
 	writeEEPROM(0, Input_Byte_Array);
 
@@ -183,12 +200,26 @@ int main(void)
 	readEEPROM(0, Output_Byte_Array);
 
 
+	// 0 = Love Sosa - Chief Keef
+	// 1 = September - Earth, Wind, and Fire
+	// 2 = Swervo - G Herbo
+	// q = stop and go to idle state
+//	uint8_t dataTemp[] = "q";
+//	HAL_UART_Transmit (&huart6, dataTemp, sizeof (dataTemp), 10);
+
+	HAL_Delay(1000);
+
+	playSong();
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+
 
 //	// create new thread
 	timer10Value = __HAL_TIM_GET_COUNTER(&htim10);
@@ -459,7 +490,7 @@ static void MX_USART3_UART_Init(void)
   huart3.Init.BaudRate = 9600;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
-  huart3.Init.Parity = UART_PARITY_EVEN;
+  huart3.Init.Parity = UART_PARITY_NONE;
   huart3.Init.Mode = UART_MODE_TX_RX;
   huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
@@ -472,6 +503,41 @@ static void MX_USART3_UART_Init(void)
   /* USER CODE BEGIN USART3_Init 2 */
 
   /* USER CODE END USART3_Init 2 */
+
+}
+
+/**
+  * @brief USART6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART6_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART6_Init 0 */
+
+  /* USER CODE END USART6_Init 0 */
+
+  /* USER CODE BEGIN USART6_Init 1 */
+
+  /* USER CODE END USART6_Init 1 */
+  huart6.Instance = USART6;
+  huart6.Init.BaudRate = 9600;
+  huart6.Init.WordLength = UART_WORDLENGTH_8B;
+  huart6.Init.StopBits = UART_STOPBITS_1;
+  huart6.Init.Parity = UART_PARITY_NONE;
+  huart6.Init.Mode = UART_MODE_TX_RX;
+  huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart6.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart6.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart6.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART6_Init 2 */
+
+  /* USER CODE END USART6_Init 2 */
 
 }
 
@@ -606,7 +672,58 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   // Check which version of the timer triggered this callback and toggle LED
   if (htim == &htim10 )
   {
-	  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+//	HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+	if(play_flag == 1){
+		if(initial_start_playing == 1){
+
+		    uint8_t dataTemp[] = "#x\n";
+		    // Convert the uint8_t variable to a string
+		    char variableString[2]; // Assuming a single-digit number
+		    snprintf(variableString, sizeof(variableString), "%u", (current_song));
+		    // Replace the "2" with the variable in the array
+		    dataTemp[1] = variableString[0];
+
+			// 0 = Love Sosa - Chief Keef
+			// 1 = September - Earth, Wind, and Fire
+			// 2 = Swervo - G Herbo
+			HAL_UART_Transmit (&huart6, dataTemp, sizeof (dataTemp), 10);
+
+			//delay?
+
+			initial_start_playing = 0;
+			i_play = 0;
+		}
+		uint8_t current_song_byte;
+		if(i_play < 3599){
+			current_song_byte = current_song_data[i_play];
+			switch(current_song_byte){
+			case 0b00000000:
+				HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+				break;
+			case 0b00000001:
+				HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+				break;
+			case 0b00000010:
+				HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+				break;
+			case 0b00000100:
+				HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+				break;
+			}
+			i_play++;
+		}
+		else{
+			stopSong();
+		}
+	}
   }
 }
 
@@ -668,6 +785,51 @@ int readEEPROM(int songID, uint8_t arr[]) {
 
     return 0;
 }
+
+
+/*
+AHHHH
+*/
+int playSong() {
+	// gather memory
+	readEEPROM(current_song, current_song_data);
+
+	// flags
+	play_flag = 1;
+	i_play = 0;
+	initial_start_playing = 1;
+
+	// current state is playing
+	current_state = 1;
+
+	return 0;
+}
+
+/*
+AHHHH
+*/
+int stopSong() {
+	// Stop playing song, return to idle mode
+	uint8_t dataTemp[] = "q";
+	HAL_UART_Transmit (&huart6, dataTemp, sizeof (dataTemp), 10);
+
+	// iterate song
+	current_song++;
+	if(current_song > max_songs){
+		current_song = 0;
+	}
+
+	// reset play counter
+	i_play = 0;
+
+	// current state is paused
+	current_state = 0;
+
+	play_flag = 0;
+
+	return 0;
+}
+
 
 
 

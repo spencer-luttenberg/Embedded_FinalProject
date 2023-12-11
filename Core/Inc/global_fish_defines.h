@@ -1,0 +1,53 @@
+/*
+ * global_fish_defines.h
+ *
+ *  Created on: Dec 8, 2023
+ *      Author: kelly
+ */
+
+#ifndef INC_GLOBAL_FISH_DEFINES_H_
+#define INC_GLOBAL_FISH_DEFINES_H_
+
+
+//FISH STATES
+#define FISH_PAUSED_STATE 0
+#define FISH_PLAYING_STATE 1
+
+
+
+//MOTOR DEFINITION IDs
+#define MOUTH_MOTOR 0
+#define BODY_MOTOR 1
+#define TAIL_MOTOR 2
+
+//TIMER 3-> MOUTH MOTOR
+//TIMER 4-> BODY MOTOR
+//TIMER 5-> TAIL MOTOR
+
+
+#define MOTOR_BODY_DUTY_CYCLE 100
+#define MOTOR_ON_DUTY_CYCLE 100
+#define MOTOR_OFF_DUTY_CYCLE 0
+
+
+//FISH STATES
+#define DEFAULT_MOTOR_STATES 0x00
+#define TAIL_MOTOR_ON 0x01
+#define BODY_MOTOR_ON 0x02
+#define BODY_TAIL_MOTOR_ON 0x03
+#define MOUTH_MOTOR_ON 0x04
+#define MOUTH_TAIL_MOTOR_ON 0x05
+#define MOUTH_BODY_MOTOR_ON 0x06
+#define MOUTH_BODY_TAIL_MOTOR_ON 0x07
+
+
+
+#define FISH_STATE_PAUSED 0
+#define FISH_STATE_PLAYING 1
+
+#define MAX_FISH_SONGS 3
+
+
+
+
+#endif /* INC_GLOBAL_FISH_DEFINES_H_ */

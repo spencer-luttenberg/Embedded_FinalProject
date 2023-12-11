@@ -22,6 +22,20 @@
 #include "stm32f7xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "string.h"
+#include "stdlib.h"
+#include "stdbool.h"
+#include "stdio.h"
+#include "memory.h"
+#include "stdint.h"
+
+#include "global_fish_defines.h"
+#include "stm32f7xx_hal_rcc.h"
+#include "stm32f7xx_hal.h"
+#include "stm32f7xx_hal_exti.h"
+#include "stm32f7xx_hal_flash_ex.h"
+#include "stm32f7xx_hal_flash.h"
+#include "stm32f7xx_hal_gpio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,9 +70,19 @@
 
 /* External variables --------------------------------------------------------*/
 extern I2C_HandleTypeDef hi2c1;
-extern UART_HandleTypeDef huart3;
+extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim10;
+extern DMA_HandleTypeDef hdma_usart3_rx;
 /* USER CODE BEGIN EV */
 extern uint8_t  Rx_data[];
+extern uint8_t new_data;
+extern uint8_t large_data_buffer[];
+extern int current_byte_ptr;
+
+
+extern int playSong();
+extern int stopSong();
+extern uint8_t current_fish_state;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -200,6 +224,67 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
+  * @brief This function handles DMA1 stream1 global interrupt.
+  */
+void DMA1_Stream1_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Stream1_IRQn 0 */
+
+  /* USER CODE END DMA1_Stream1_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart3_rx);
+  /* USER CODE BEGIN DMA1_Stream1_IRQn 1 */
+
+  /* USER CODE END DMA1_Stream1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles EXTI line[9:5] interrupts.
+  */
+void EXTI9_5_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI9_5_IRQn 0 */
+
+	//BUTTON CODE GOES HERE
+//	switch(current_fish_state){
+//	case FISH_PAUSED_STATE:
+//	{
+//		playSong();
+//		break;
+//	}
+//	case FISH_PLAYING_STATE:
+//	{
+//		stopSong();
+//		break;
+//
+//	}
+
+
+	//}
+
+  /* USER CODE END EXTI9_5_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(Push_Button_Pin);
+  /* USER CODE BEGIN EXTI9_5_IRQn 1 */
+
+
+  /* USER CODE END EXTI9_5_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
+  */
+void TIM1_UP_TIM10_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
+
+  /* USER CODE END TIM1_UP_TIM10_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
+  HAL_TIM_IRQHandler(&htim10);
+  /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
+
+  /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
+}
+
+/**
   * @brief This function handles I2C1 event interrupt.
   */
 void I2C1_EV_IRQHandler(void)
@@ -228,21 +313,37 @@ void I2C1_ER_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles USART3 global interrupt.
+  * @brief This function handles EXTI line[15:10] interrupts.
   */
-void USART3_IRQHandler(void)
+void EXTI15_10_IRQHandler(void)
 {
-  /* USER CODE BEGIN USART3_IRQn 0 */
+  /* USER CODE BEGIN EXTI15_10_IRQn 0 */
 
-  /* USER CODE END USART3_IRQn 0 */
-  HAL_UART_IRQHandler(&huart3);
-  /* USER CODE BEGIN USART3_IRQn 1 */
-  HAL_UART_Receive_IT (&huart3, Rx_data, 256);
+  /* USER CODE END EXTI15_10_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+  /* USER CODE BEGIN EXTI15_10_IRQn 1 */
 
+  switch(current_fish_state){
+  case FISH_PAUSED_STATE:
+  {
+	  playSong();
+	  break;
+  }
+  case FISH_PLAYING_STATE:
+  {
+	  stopSong();
+	  break;
+  }
 
-  /* USER CODE END USART3_IRQn 1 */
+  }
+
+  /* USER CODE END EXTI15_10_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
+
+
+
+
 
 /* USER CODE END 1 */
